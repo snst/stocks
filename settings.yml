@@ -1,0 +1,23 @@
+var_auto_update: true
+var_buy_factor: 3.0
+var_buy_threshold: -0.11
+var_end_date: '2021-10-29'
+var_initial_order: 500.0
+var_max_depot: 10000.0
+var_max_order: 2000.0
+var_maximum_reach: 0.8
+var_min_order: 50.0
+var_minimum_reach: 0.8
+var_order_price: 1.0
+var_period: 1mo
+var_selected_col1: []
+var_selected_col2:
+- Low3
+- High3
+- Spread bar
+var_selected_stocks: SIE.DE
+var_sell_factor: 1.0
+var_sell_threshold: 3.9599999999999995
+var_start_date: 2021-10-1
+var_tax: 25.0
+var_use_period: true
