@@ -58,7 +58,7 @@ class StockLoader():
             last_close = close
             hist.at[index, D_CLOSE_DELTA_PERCENT] = delta
 
-            low3 = low + (1.0 - settings.var_minimum_reach) * (spread / 2.0)
-            high3 = high - (1.0 - settings.var_maximum_reach) * (spread / 2.0)
+            low3 = low + (1.0 - settings.minimum_reach) * (spread / 2.0)
+            high3 = high - (1.0 - settings.maximum_reach) * (spread / 2.0)
             hist.at[index, D_LOW_3] = low3
             hist.at[index, D_HIGH_3] = high3

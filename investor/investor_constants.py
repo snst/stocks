@@ -32,5 +32,5 @@ ALL_COLUMNS = [D_DOPEN, D_CLOSE, D_CLOSE_SCALED, D_CLOSE_DELTA_PERCENT, D_HIGH, 
                D_INVESTED, D_DEPOT, D_BALANCE_BRUTTO, D_BALANCE_NETTO, D_BUY, D_SELL, D_BUY_PERCENT, D_SELL_PERCENT, D_STOCK_CNT, D_LAST_ORDER_PRICE]
 
 # https://matplotlib.org/stable/gallery/color/named_colors.html
-COLOR_MAP = {D_CLOSE: 'blue', D_BALANCE_BRUTTO: 'green', D_BUY: 'tomato',
+COLOR_MAP = {D_CLOSE: 'blue', D_BALANCE_BRUTTO: 'limegreen', D_BALANCE_NETTO: 'green', D_BUY: 'tomato',
              D_SELL: 'lawngreen', D_DEPOT: 'black', D_SPREAD_BAR: 'lightgray'}

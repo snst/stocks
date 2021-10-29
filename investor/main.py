@@ -1,7 +1,6 @@
 from investor_constants import *
 from datetime import timedelta, datetime, date
 from geneticalgorithm import geneticalgorithm as ga
-import numpy as np
 import pandas as pd
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
@@ -12,6 +11,7 @@ from stock_loader import *
 from investor import *
 import sys
 import matplotlib
+from investor_optimize import *
 matplotlib.use('Qt5Agg')
 
 
@@ -124,8 +124,12 @@ class MainWindow(QMainWindow):
         i = self.investor
         self.info(f'netto: {i.netto_balance:.2f}, brutto: {i.brutto_balance:.2f}, tax won: {i.tax_won:.2f}, tax loss: {i.tax_loss:.2f}, tax: {i.tax:.2f}, invested: {i.sum_invested:.2f}, depot: {i.sum_depot:.2f}, cnt sell: {i.cnt_sell}, cnt buy: {i.cnt_buy}, trading cost: {i.trading_cost:.2f}')
 
+    def optimize(self):
+        opt = InvestorOptimizer(self.df, self.settings)
+        opt.run()
+
     def auto_update(self):
-        if self.settings.var_auto_update:
+        if self.settings.auto_update:
             self.simulate()
 
     def parse_date(self, val):
@@ -138,40 +142,40 @@ class MainWindow(QMainWindow):
         self.df = self.df_.copy()
 
     def update_plot(self):
-        self.plot(df=self.df, c1=self.settings.var_selected_col1,
-                  c2=self.settings.var_selected_col2)
+        self.plot(df=self.df, c1=self.settings.selected_col1,
+                  c2=self.settings.selected_col2)
 
     def update_stock(self):
         start = None
         end = None
         period = None
-        if self.settings.var_use_period:
-            period = self.settings.var_period
+        if self.settings.use_period:
+            period = self.settings.period
         else:
-            start = self.parse_date(self.settings.var_start_date)
-            end = self.parse_date(self.settings.var_end_date)
+            start = self.parse_date(self.settings.start_date)
+            end = self.parse_date(self.settings.end_date)
 
         self.df_ = self.stock.load(
-            names=self.settings.var_selected_stocks, start=start, end=end, period=period)
+            names=self.settings.selected_stocks, start=start, end=end, period=period)
         self.stock.preprocess_hist(self.df_, self.settings)
         self.copy_df()
 
     def click_stocknames(self, val):
-        self.settings.var_selected_stocks = val[0].text()
+        self.settings.selected_stocks = val[0].text()
         self.auto_update()
 
     def click_columns1(self, val):
-        self.settings.var_selected_col1 = []
+        self.settings.selected_col1 = []
         if len(val) > 0:
             for col in val:
-                self.settings.var_selected_col1.append(col.text())
+                self.settings.selected_col1.append(col.text())
         self.auto_update()
 
     def click_columns2(self, val):
-        self.settings.var_selected_col2 = []
+        self.settings.selected_col2 = []
         if len(val) > 0:
             for col in val:
-                self.settings.var_selected_col2.append(col.text())
+                self.settings.selected_col2.append(col.text())
         self.auto_update()
 
     def info(self, text):
@@ -191,14 +195,15 @@ class MainWindow(QMainWindow):
         self.layout_h.addWidget(widget)
         self.layout_h.addLayout(self.layout_vr)
 
-        self.add_list(ALL_STOCKNAMES, selected=self.settings.var_selected_stocks,
+        self.add_list(ALL_STOCKNAMES, selected=self.settings.selected_stocks,
                       connect=self.click_stocknames)
         self.add_list(
-            ALL_COLUMNS, selected=self.settings.var_selected_col1, connect=self.click_columns1)
+            ALL_COLUMNS, selected=self.settings.selected_col1, connect=self.click_columns1)
         self.add_list(
-            ALL_COLUMNS, selected=self.settings.var_selected_col2, connect=self.click_columns2)
+            ALL_COLUMNS, selected=self.settings.selected_col2, connect=self.click_columns2)
 
         self.add_button("Simulate", connect=self.simulate)
+        self.add_button("Optimize", connect=self.optimize)
         self.add_button("Save", connect=lambda: self.settings.save())
         self.add_dspinbox("buy threshold", var='var_buy_threshold',
                           min=-10.0, max=0.0, step=0.1)
@@ -208,25 +213,25 @@ class MainWindow(QMainWindow):
                           min=0.0, max=10.0, step=0.1)
         self.add_dspinbox("sell factor", var='var_sell_factor',
                           min=0.0, max=1.0, step=0.1)
-        self.add_dspinbox("min reach", var='var_minimum_reach',
+        self.add_dspinbox("min reach", var='minimum_reach',
                           min=0.0, max=1.0, step=0.1)
-        self.add_dspinbox("max reach", var='var_maximum_reach',
+        self.add_dspinbox("max reach", var='maximum_reach',
                           min=0.0, max=1.0, step=0.1)
-        self.add_dspinbox("initial order", var='var_initial_order',
+        self.add_dspinbox("initial order", var='initial_order',
                           min=0.0, max=10000, step=50)
-        self.add_dspinbox("min order", var='var_min_order',
+        self.add_dspinbox("min order", var='min_order',
                           min=10, max=1000000, step=10)
-        self.add_dspinbox("max order", var='var_max_order',
+        self.add_dspinbox("max order", var='max_order',
                           min=100, max=1000000, step=100)
-        self.add_dspinbox("max depot", var='var_max_depot',
+        self.add_dspinbox("max depot", var='max_depot',
                           min=100, max=1000000, step=100)
-        self.add_dspinbox("order price", var='var_order_price',
+        self.add_dspinbox("order costs", var='order_costs',
                           min=0.0, max=50.0, step=1)
-        self.add_dspinbox("tax", var='var_tax', min=0.0, max=50.0, step=1)
-        self.add_widget_row([QLabel('range'), self.create_edit(var='var_start_date'), self.create_edit(var='var_end_date')])
+        self.add_dspinbox("tax", var='tax', min=0.0, max=50.0, step=1)
+        self.add_widget_row([QLabel('range'), self.create_edit(var='start_date'), self.create_edit(var='end_date')])
         self.add_widget_row([self.create_checkbox(
-            "use period", var="var_use_period"), self.create_edit(var='var_period')])
-        self.add_checkbox("auto update", var="var_auto_update")
+            "use period", var="use_period"), self.create_edit(var='period')])
+        self.add_checkbox("auto update", var="auto_update")
 
         self.plot_widget = MplCanvas(self, width=10, height=8, dpi=100)
         toolbar = NavigationToolbar(self.plot_widget, self)
