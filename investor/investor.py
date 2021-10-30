@@ -119,8 +119,12 @@ class Investor():
                 buy_val = self.buy(index, price_buy, self.settings.initial_order)
             else:
                 if percent_buy < self.settings.var_buy_threshold:
-                    val = self.settings.var_buy_factor * \
-                        self.depot_value(price_buy)
+                    depot_value_price_buy = self.depot_value(price_buy)
+                    depot_value_last_order = self.depot_value(self.last_stock_price_action)
+                    loss = depot_value_last_order -depot_value_price_buy
+                    val = self.settings.var_buy_factor * depot_value_price_buy
+                    val = self.settings.var_buy_factor * loss
+                        
                     if val > self.settings.min_order:
                         val = min(val, self.settings.max_order)
                         val = min(val, self.settings.max_depot -
@@ -154,7 +158,7 @@ class Investor():
                 (self.tax + self.trading_cost)
             self.df.at[index, D_BALANCE_NETTO] = self.netto_balance
 
-        return self.netto_balance
+        return self.brutto_balance
 
     def print(self):
         print(self.df)

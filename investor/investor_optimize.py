@@ -21,7 +21,11 @@ class InvestorOptimizer():
         global variable_names
         train_investor = Investor(df, settings)
         self.settings = settings
-        variable_names = self.settings.get_variable_names()
+        variable_names_all = self.settings.get_variable_names()
+        variable_names = []
+        for name in variable_names_all:
+            if settings.get_value(f'cb_{name}', False):
+                variable_names.append(name)
         min_max_list = []
         for name in variable_names:
             min_max = self.settings.get_value(f'range_{name}', 0)
