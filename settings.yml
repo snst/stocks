@@ -4,14 +4,14 @@ cb_var_buy_threshold: true
 cb_var_sell_factor: true
 cb_var_sell_threshold: true
 end_date: '2021-10-29'
-initial_order: 200.0
+initial_order: 100.0
 max_depot: 10000.0
 max_order: 2000.0
-maximum_reach: 0.5
+maximum_reach: 0.7999999999999999
 min_order: 50.0
-minimum_reach: 0.6
+minimum_reach: 0.7999999999999999
 order_costs: 1.0
-period: 1mo
+period: 6mo
 range_var_buy_factor:
 - 0.0
 - 500.0
@@ -25,18 +25,16 @@ range_var_sell_threshold:
 - 0.0
 - 5
 selected_col1:
-- Close
-- Buy
-- Sell
-selected_col2:
 - Spread bar
-- Balance brutto
+- Last order price
+selected_col2:
 - Balance netto
-selected_stocks: SIE.DE
+selected_stocks:
+- SIE.DE
 start_date: 2021-10-1
 tax: 25.0
 use_period: true
-var_buy_factor: 3.21
-var_buy_threshold: -0.23
-var_sell_factor: 0.31
-var_sell_threshold: 2.33
+var_buy_factor: 480.18
+var_buy_threshold: -0.26
+var_sell_factor: 0.88
+var_sell_threshold: 3.51

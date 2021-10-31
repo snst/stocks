@@ -6,13 +6,10 @@ class Investor():
         self.df = df
         self.settings = settings
 
-
     def reset(self):
         self.cnt_stocks = 0.0
         self.cnt_sell = 0
         self.cnt_buy = 0
-        self.sum_sell = 0.0
-        self.sum_buy = 0.0
         self.sum_cash = 0.0
         self.sum_depot = 0.0
         self.sum_invested = 0.0
@@ -30,13 +27,14 @@ class Investor():
         self.df[D_BUY] = 0.0
         self.df[D_SELL] = 0.0
         self.buy_list = []
-        self.tax_won = 0.0
+        self.tax_profit = 0.0
         self.tax_loss = 0.0
-        self.df[D_TAX_WON] = 0.0
+        self.df[D_TAX_PROFIT] = 0.0
         self.df[D_TAX_LOSS] = 0.0
         self.df[D_SELL_BALANCE] = 0.0
         self.price_name_sell = D_HIGH_3
         self.price_name_buy = D_LOW_3
+        self.i = 0
 
     def calc_percent(self, old, new):
         return float((100.0 * new / old) - 100.0)
@@ -47,46 +45,39 @@ class Investor():
     def buy(self, index, stock_price, val):
         self.last_stock_price_action = stock_price
         self.cnt_buy += 1
-        self.sum_buy += val
         self.sum_depot += val
         self.sum_invested += val
         stock_cnt = (val / stock_price)
         self.cnt_stocks += stock_cnt
-        self.df.at[index, D_LAST_ORDER_PRICE] = stock_price
         self.buy_list.append((stock_cnt, stock_price))
         return val
 
     def sell(self, index, stock_price, val):
         self.last_stock_price_action = stock_price
         self.cnt_sell += 1
-        self.sum_sell += val
         self.sum_depot -= val
         self.sum_invested -= val
         sell_stock_cnt = (val / stock_price)
         self.cnt_stocks -= sell_stock_cnt
-        self.df.at[index, D_LAST_ORDER_PRICE] = stock_price
 
-        buy_value = 0.0
-        to_sell_cnt = sell_stock_cnt
-        while to_sell_cnt > 0.0 and len(self.buy_list) > 0:
-            i_cnt, i_price = self.buy_list[0]
-            i_sell_cnt = to_sell_cnt
-            if i_sell_cnt >= i_cnt:
-                i_sell_cnt = i_cnt
+        while sell_stock_cnt > 0.0 and len(self.buy_list) > 0:
+            bought_stock_cnt, bought_stock_price = self.buy_list[0]
+            now_sell_cnt = min(sell_stock_cnt, bought_stock_cnt)
+            if sell_stock_cnt >= bought_stock_cnt:
                 self.buy_list.pop(0)
+            else:
+                renmain_cnt = bought_stock_cnt - now_sell_cnt
+                self.buy_list[0] = (renmain_cnt, bought_stock_price)
+            sell_stock_cnt -= now_sell_cnt
 
-            to_sell_cnt -= i_sell_cnt
-            buy_value += i_sell_cnt * i_price
+            bought_stock_value = now_sell_cnt * bought_stock_price
+            sell_stock_value = now_sell_cnt * stock_price
+            balance = sell_stock_value - bought_stock_value
 
-        sell_balance = val - buy_value
-        if sell_balance > 0.0:
-            self.tax_won += sell_balance
-        else:
-            self.tax_loss += sell_balance
-
-        self.df.at[index, D_TAX_WON] = self.tax_won
-        self.df.at[index, D_TAX_LOSS] = self.tax_loss
-        self.df.at[index, D_SELL_BALANCE] = sell_balance
+            if balance > 0.0:
+                self.tax_profit += balance
+            else:
+                self.tax_loss += -balance
         return val
 
     def depot_value(self, stock_price):
@@ -97,6 +88,7 @@ class Investor():
 
     def run(self):
         self.reset()
+        self.i = 0
         for i, (index, row) in enumerate(self.df.iterrows()):
             buy_val = 0.0
             sell_val = 0.0
@@ -116,22 +108,25 @@ class Investor():
             self.df.at[index, D_SELL_PERCENT] = percent_sell
 
             if self.sum_invested <= 0.0:
-                buy_val = self.buy(index, price_buy, self.settings.initial_order)
+                buy_val = self.buy(
+                    index, price_buy, self.settings.initial_order)
             else:
                 if percent_buy < self.settings.var_buy_threshold:
                     depot_value_price_buy = self.depot_value(price_buy)
-                    depot_value_last_order = self.depot_value(self.last_stock_price_action)
-                    loss = depot_value_last_order -depot_value_price_buy
+                    depot_value_last_order = self.depot_value(
+                        self.last_stock_price_action)
+                    loss = depot_value_last_order - depot_value_price_buy
                     val = self.settings.var_buy_factor * depot_value_price_buy
                     val = self.settings.var_buy_factor * loss
-                        
+
                     if val > self.settings.min_order:
                         val = min(val, self.settings.max_order)
                         val = min(val, self.settings.max_depot -
                                   self.depot_value(price_buy))
                         buy_val = self.buy(index, price_buy, val)
                     elif self.sum_depot < self.settings.initial_order:
-                        val = self.settings.initial_order - self.depot_value(price_buy)
+                        val = self.settings.initial_order - \
+                            self.depot_value(price_buy)
                         buy_val = self.buy(index, price_buy, val)
                 elif percent_sell > self.settings.var_sell_threshold:
                     val = self.depot_value(price_sell) * \
@@ -149,16 +144,20 @@ class Investor():
             self.df.at[index, D_BUY] = buy_val
             self.df.at[index, D_SELL] = sell_val
             self.df.at[index, D_STOCK_CNT] = self.cnt_stocks
+            self.df.at[index, D_LAST_ORDER_PRICE] = self.last_stock_price_action
+            self.df.at[index, D_TAX_PROFIT] = self.tax_profit
+            self.df.at[index, D_TAX_LOSS] = self.tax_loss
 
-            self.tax = (max(self.tax_won - self.tax_loss, 0.0)
+            self.tax = (max(self.tax_profit - self.tax_loss, 0.0)
                         * self.settings.tax) / 100.0
             self.trading_cost = (self.cnt_buy + self.cnt_sell) * \
                 self.settings.order_costs
-            self.netto_balance = self.brutto_balance - \
-                (self.tax + self.trading_cost)
+            self.netto_balance = self.brutto_balance - self.trading_cost
+            - self.tax
             self.df.at[index, D_BALANCE_NETTO] = self.netto_balance
+            self.i += 1
 
-        return self.brutto_balance
+        return self.netto_balance
 
     def print(self):
         print(self.df)

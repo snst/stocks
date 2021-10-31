@@ -23,14 +23,18 @@ class StockLoader():
         self.cache = {}
 
     def load(self, names, period=None, start=None, end=None):
-        if names in self.cache:
-            stock = self.cache[names]
-            if stock.is_same(period, start, end):
-                return stock.hist
+        ret = None
+        if isinstance(names, list) and len(names)>0:
+            names = names[0]
+            if names in self.cache:
+                stock = self.cache[names]
+                if stock.is_same(period, start, end):
+                    return stock.hist
 
-        stock = Stock(names, self.session, period, start, end)
-        self.cache[names] = stock
-        return stock.hist
+            stock = Stock(names, self.session, period, start, end)
+            self.cache[names] = stock
+            ret = stock.hist
+        return ret
 
     def preprocess(self, name, settings):
         hist = self.cache.get(name, None)

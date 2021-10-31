@@ -38,23 +38,25 @@ class MainWindow(QMainWindow, UIHelper):
 
     def plot(self, df, c1=[], c2=[], title=""):
         self.plot_widget.fig.clear()
-        ax = self.plot_widget.fig.add_subplot(111)
-        for column in c1:
-            self.plot_axix(df, ax, column)
-        ax = ax.twinx()
-        for column in c2:
-            self.plot_axix(df, ax, column)
-        self.plot_widget.fig.legend()
-        ax.grid()
+        if not df is None:
+            ax = self.plot_widget.fig.add_subplot(111)
+            for column in c1:
+                self.plot_axix(df, ax, column)
+            ax = ax.twinx()
+            for column in c2:
+                self.plot_axix(df, ax, column)
+            self.plot_widget.fig.legend()
+            ax.grid()
         self.plot_widget.draw()
 
     def simulate(self):
         self.update_stock()
-        self.investor = Investor(self.df, self.settings)
-        self.investor.run()
+        if not self.df is None:
+            self.investor = Investor(self.df, self.settings)
+            self.investor.run()
+            i = self.investor
+            self.info(f'netto: {i.netto_balance:.2f}, brutto: {i.brutto_balance:.2f}, tax won: {i.tax_profit:.2f}, tax loss: {i.tax_loss:.2f}, tax: {i.tax:.2f}, invested: {i.sum_invested:.2f}, depot: {i.sum_depot:.2f}, cnt sell: {i.cnt_sell}, cnt buy: {i.cnt_buy}, trading cost: {i.trading_cost:.2f}')
         self.update_plot()
-        i = self.investor
-        self.info(f'netto: {i.netto_balance:.2f}, brutto: {i.brutto_balance:.2f}, tax won: {i.tax_won:.2f}, tax loss: {i.tax_loss:.2f}, tax: {i.tax:.2f}, invested: {i.sum_invested:.2f}, depot: {i.sum_depot:.2f}, cnt sell: {i.cnt_sell}, cnt buy: {i.cnt_buy}, trading cost: {i.trading_cost:.2f}')
 
     def optimize(self):
         opt = InvestorOptimizer(self.df, self.settings)
@@ -74,9 +76,6 @@ class MainWindow(QMainWindow, UIHelper):
         else:
             return datetime.strptime(val, "%Y-%m-%d")
 
-    def copy_df(self):
-        self.df = self.df_.copy()
-
     def update_plot(self):
         self.plot(df=self.df, c1=self.settings.selected_col1,
                   c2=self.settings.selected_col2)
@@ -91,10 +90,11 @@ class MainWindow(QMainWindow, UIHelper):
             start = self.parse_date(self.settings.start_date)
             end = self.parse_date(self.settings.end_date)
 
-        self.df_ = self.stock.load(
+        df = self.stock.load(
             names=self.settings.selected_stocks, start=start, end=end, period=period)
-        self.stock.preprocess_hist(self.df_, self.settings)
-        self.copy_df()
+        if not df is None:
+            self.df = df.copy()
+            self.stock.preprocess_hist(self.df, self.settings)
 
     def info(self, text):
         self.qedit_info.setText(text)
