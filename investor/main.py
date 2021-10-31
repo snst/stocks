@@ -57,6 +57,7 @@ class MainWindow(QMainWindow, UIHelper):
             i = self.investor
             self.info(f'netto: {i.netto_balance:.2f}, brutto: {i.brutto_balance:.2f}, tax won: {i.tax_profit:.2f}, tax loss: {i.tax_loss:.2f}, tax: {i.tax:.2f}, invested: {i.sum_invested:.2f}, depot: {i.sum_depot:.2f}, cnt sell: {i.cnt_sell}, cnt buy: {i.cnt_buy}, trading cost: {i.trading_cost:.2f}')
         self.update_plot()
+        self.simulated_clicked_once = True
 
     def optimize(self):
         opt = InvestorOptimizer(self.df, self.settings)
@@ -64,7 +65,7 @@ class MainWindow(QMainWindow, UIHelper):
         self.settings.update_ui()
 
     def auto_update(self):
-        if self.settings.auto_update:
+        if self.settings.auto_update and self.simulated_clicked_once:
             self.simulate()
 
     def ui_changed(self, name, val):
@@ -101,6 +102,7 @@ class MainWindow(QMainWindow, UIHelper):
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+        self.simulated_clicked_once = False
         self.widget_dict = {}
         self.settings = Settings(self.set_widget_value)
         self.settings.load()
@@ -133,10 +135,10 @@ class MainWindow(QMainWindow, UIHelper):
                          min=0.0, max=self.settings.range_var_buy_factor[1], step=0.1, checkbox=True)
         self.add_spinbox("sell factor", var='var_sell_factor',
                          min=0.0, max=1.0, step=0.1, checkbox=True)
-        self.add_spinbox("min reach", var='minimum_reach',
-                         min=0.0, max=1.0, step=0.1)
-        self.add_spinbox("max reach", var='maximum_reach',
-                         min=0.0, max=1.0, step=0.1)
+        self.add_spinbox("Low spread %", var='low_spread_percent',
+                         min=0, max=100, step=10)
+        self.add_spinbox("High spread %", var='high_spread_percent',
+                         min=0, max=100, step=10)
         self.add_spinbox("initial order", var='initial_order',
                          min=0.0, max=10000, step=50)
         self.add_spinbox("min order", var='min_order',

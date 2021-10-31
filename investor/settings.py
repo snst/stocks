@@ -7,8 +7,8 @@ VAR_PREFIX = 'var_'
 class Settings():
     def __init__(self, set_func):
         self.set_func = set_func
-        self.minimum_reach = 1.0
-        self.maximum_reach = 1.0
+        self.low_spread_percent = 1.0
+        self.high_spread_percent = 1.0
         self.max_depot = 10000.0
         self.min_order = 50.0
         self.max_order = 2000.0
